@@ -50,6 +50,17 @@ async function run() {
         const result = await Collection.findOne({ _id: new ObjectId(id) });
         return res.send(result);
     })
+
+    app.get('/userbid',async(req,res)=>{
+        const {email}= req.query;
+        const result = await bidCollection.find({userEmail:email}).toArray();
+        res.send(result);
+    })
+    app.get('/userbidrequest',async(req,res)=>{
+        const {email}= req.query;
+        const result = await bidCollection.find({buyerEmail:email}).toArray();
+        res.send(result);
+    })
     app.post('/addjob',async(req,res)=>{
         const job=req.body;
         const result = await Collection.insertOne(job);
