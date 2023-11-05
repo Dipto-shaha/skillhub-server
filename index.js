@@ -71,6 +71,29 @@ async function run() {
         const result = await bidCollection.insertOne(job);
         res.send(result);
     });
+    app.patch('/updatebid/:_id', async (req, res) => {
+        const id = req.params._id;
+        const bid = req.body;
+      
+        console.log(id); // You can remove this line if not necessary
+      
+        try {
+          const result = await bidCollection.updateOne(
+            { _id: new ObjectId(id) },
+            { $set: bid },
+            { upsert: false }
+          );
+      
+          // Retrieve the updated document
+          const updatedDocument = await bidCollection.findOne({ _id: new ObjectId(id) });
+      
+          res.send({ result, updatedDocument });
+        } catch (error) {
+          console.error("Error updating bid:", error);
+          res.status(500).send({ error: "Error updating bid" });
+        }
+      });
+      
     app.put("/updatejob/:_id", async (req, res) => {
         const id = req.params._id;
         console.log("Update Job ",id);
