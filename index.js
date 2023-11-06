@@ -52,9 +52,18 @@ async function run() {
     })
 
     app.get('/userbid',async(req,res)=>{
-        const {email}= req.query;
-        const result = await bidCollection.find({userEmail:email}).toArray();
-        res.send(result);
+        const {email,sort}= req.query;
+        if(sort && sort=='sorted')
+        {
+          const result = await bidCollection.find({userEmail:email}).sort({status:1}).toArray();
+          res.send(result);
+        }
+        else
+        {
+          const result = await bidCollection.find({userEmail:email}).toArray();
+          res.send(result);
+        }
+        
     })
     app.get('/userbidrequest',async(req,res)=>{
         const {email}= req.query;
