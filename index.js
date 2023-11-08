@@ -2,15 +2,30 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require('dotenv').config()
-
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 
 const port= process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({origin:['http://localhost:5173'], credentials : true}));
 app.use(express.json());
+app.use(cookieParser());
 
-
+const verifyToken =async(req,res,next) =>{
+  const token =req.cookies?.token;
+  if(!token)
+      return res.send({message: "Unauthorized Access"})
+      console.log("My token is ",token);
+      jwt.verify(token,process.env.ACCESS_TOKEN,(err,decoded)=>{
+        if(err)
+        {
+          return res.send({message: "Unauthorized Access"})
+        }
+        req.user=decoded;
+        next();
+    })
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.SECRET_KEY}@cluster0.bnmqd0w.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -25,6 +40,24 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
+    app.post('/jwt',async(req,res)=>{
+      const result=req.body;
+      console.log("Token Created");
+      const token= jwt.sign(result,process.env.ACCESS_TOKEN,{expiresIn:'1h'})
+      res.cookie('token', token ,{
+        httpOnly:true,
+        secure: process.env.NODE_ENV ==='production',
+        sameSite:  process.env.NODE_ENV ==='production' ? 'none': 'strict'
+      })
+      .send({success:true});
+    })
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      console.log('logging out');
+      res
+      .clearCookie('token', { maxAge: 0, sameSite: 'none', secure: true })
+      .send({ success: true })
+    })
     // Connect the client to the server	(optional starting in v4.7)
     //await client.connect();
     // Send a ping to confirm a successful connection
@@ -37,22 +70,27 @@ async function run() {
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     app.get('/job',async(req,res)=>{
+        console.log("All job list")
         const result = await Collection.find().toArray();
         res.send(result);
     })
-    app.get('/userjob',async(req,res)=>{
+    app.post('/userjob',verifyToken,async(req,res)=>{
         const {email}= req.query;
+        //console.log(email,req.user)
+        console.log("Uer job list");
         const result = await Collection.find({email}).toArray();
         res.send(result);
     })
     app.get('/job/:id',async(req,res)=>{
         const id = req.params.id;
+        console.log("User Job List");
         const result = await Collection.findOne({ _id: new ObjectId(id) });
         return res.send(result);
     })
 
-    app.get('/userbid',async(req,res)=>{
+    app.get('/userbid',verifyToken,async(req,res)=>{
         const {email,sort}= req.query;
+        console.log("User Bid list");
         if(sort && sort=='sorted')
         {
           const result = await bidCollection.find({userEmail:email}).sort({status:1}).toArray();
@@ -65,27 +103,28 @@ async function run() {
         }
         
     })
-    app.get('/userbidrequest',async(req,res)=>{
+    app.get('/userbidrequest',verifyToken,async(req,res)=>{
+        console.log("User Bid Request");
         const {email}= req.query;
         const result = await bidCollection.find({buyerEmail:email}).toArray();
         res.send(result);
     })
-    app.post('/addjob',async(req,res)=>{
+    app.post('/addjob',verifyToken,async(req,res)=>{
+        console.log("Add Job Request")
         const job=req.body;
         const result = await Collection.insertOne(job);
         res.send(result);
     });
-    app.post('/bidjob',async(req,res)=>{
+    app.post('/bidjob',verifyToken,async(req,res)=>{
+        console.log("Bid Job List")
         const job=req.body;
         const result = await bidCollection.insertOne(job);
         res.send(result);
     });
-    app.patch('/updatebid/:_id', async (req, res) => {
+    app.patch('/updatebid/:_id', verifyToken,async (req, res) => {
         const id = req.params._id;
         const bid = req.body;
-      
-        console.log(id); // You can remove this line if not necessary
-      
+        console.log("Updateb Job Bid Request");
         try {
           const result = await bidCollection.updateOne(
             { _id: new ObjectId(id) },
@@ -103,11 +142,10 @@ async function run() {
         }
       });
       
-    app.put("/updatejob/:_id", async (req, res) => {
+    app.put("/updatejob/:_id",verifyToken, async (req, res) => {
         const id = req.params._id;
-        console.log("Update Job ",id);
+        console.log("Update Job Request");
         const job = req.body;
-        console.log(id);
         const result = await Collection.updateOne(
           { _id: new ObjectId(id) }, // Find Data by query many time query type is "_id: id" Cheack on database
           {
@@ -119,7 +157,7 @@ async function run() {
       });
     app.delete("/jobDelete/:_id", async (req, res) => {
         const id = req.params._id;
-        console.log("Job delted",id);
+        console.log("Job deleted");
         const result = await Collection.deleteOne({_id: new ObjectId(id) });
         res.send(result);
     });
