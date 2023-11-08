@@ -8,7 +8,7 @@ const { MongoClient, ServerApiVersion,ObjectId } = require('mongodb');
 
 const port= process.env.PORT || 5000;
 
-app.use(cors({origin:['http://localhost:5173'], credentials : true}));
+app.use(cors({origin:['http://localhost:5173','https://skillhub-d14ce.web.app'], credentials : true}));
 app.use(express.json());
 app.use(cookieParser());
 
