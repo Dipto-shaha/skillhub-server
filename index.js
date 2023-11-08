@@ -76,7 +76,6 @@ async function run() {
     })
     app.post('/userjob',verifyToken,async(req,res)=>{
         const {email}= req.query;
-        //console.log(email,req.user)
         console.log("Uer job list");
         const result = await Collection.find({email}).toArray();
         res.send(result);
