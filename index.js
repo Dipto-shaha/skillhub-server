@@ -131,10 +131,7 @@ async function run() {
             { $set: bid },
             { upsert: false }
           );
-      
-          // Retrieve the updated document
-          const updatedDocument = await bidCollection.findOne({ _id: new ObjectId(id) });
-      
+           const updatedDocument = await bidCollection.findOne({ _id: new ObjectId(id) });
           res.send({ result, updatedDocument });
         } catch (error) {
           console.error("Error updating bid:", error);
@@ -147,11 +144,11 @@ async function run() {
         console.log("Update Job Request");
         const job = req.body;
         const result = await Collection.updateOne(
-          { _id: new ObjectId(id) }, // Find Data by query many time query type is "_id: id" Cheack on database
+          { _id: new ObjectId(id) }, 
           {
-            $set: job, // Set updated Data
+            $set: job, 
           },
-          { upsert: true } // define work
+          { upsert: true } 
         );
         res.send({ result });
       });
